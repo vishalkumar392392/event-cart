@@ -9,7 +9,7 @@ public class HelloWorldController {
 	
 	@GetMapping(path = "message")
 	public String getMessage() {
-		return "Hello World";
+		return "Hello World from eventcart";
 	}
 
 }
