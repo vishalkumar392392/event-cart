@@ -5,8 +5,6 @@ pipeline {
         APP_NAME = "eventcart"
         JAR_FILE = "target/*.jar"
         DEPLOY_PATH = "/opt/eventcart"
-        SERVER_USER = "ec2-user"
-        SERVER_IP = "54.147.47.205"
     }
 
     stages {
@@ -22,21 +20,18 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo "🚀 Deploying to EC2 Server..."
+                echo "🚀 Deploying locally on same EC2 server..."
 
-                sshagent(['eventcart-ssh']) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} "sudo mkdir -p ${DEPLOY_PATH} && sudo chown ${SERVER_USER} ${DEPLOY_PATH}"
+                sh '''
+                    sudo mkdir -p ${DEPLOY_PATH}
+                    sudo cp ${JAR_FILE} ${DEPLOY_PATH}/${APP_NAME}.jar
 
-                        scp -o StrictHostKeyChecking=no ${JAR_FILE} ${SERVER_USER}@${SERVER_IP}:${DEPLOY_PATH}/${APP_NAME}.jar
+                    sudo systemctl stop ${APP_NAME} || true
+                    sudo systemctl start ${APP_NAME}
+                    sudo systemctl status ${APP_NAME} --no-pager
+                '''
 
-                        ssh -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_IP} "
-                            sudo systemctl stop ${APP_NAME} || true
-                            sudo systemctl start ${APP_NAME}
-                            sudo systemctl status ${APP_NAME} --no-pager
-                        "
-                    '''
-                }
+                echo "✔ Deployment Completed Successfully"
             }
         }
     }
