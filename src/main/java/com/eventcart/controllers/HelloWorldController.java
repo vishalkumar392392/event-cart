@@ -11,5 +11,10 @@ public class HelloWorldController {
 	public String getMessage() {
 		return "Hello World from eventcart";
 	}
+	
+	@GetMapping(path = "response")
+	public String getResponse() {
+		return "Learning CI CD...";
+	}
 
 }
