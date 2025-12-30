@@ -3,6 +3,6 @@ WORKDIR /app
 
 COPY eventcart-0.0.2-SNAPSHOT.jar app.jar
 
-EXPOSE 8081
+EXPOSE 80
 
 ENTRYPOINT ["java", "-jar", "app.jar", "--server.port=8081"]
