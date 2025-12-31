@@ -16,5 +16,10 @@ public class HelloWorldController {
 	public String getResponse() {
 		return "Learning CI CD...";
 	}
+	
+	@GetMapping(path = "ansible")
+	public String getAnsible() {
+		return "Working with Ansible...";
+	}
 
 }
