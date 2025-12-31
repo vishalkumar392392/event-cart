@@ -21,5 +21,10 @@ public class HelloWorldController {
 	public String getAnsible() {
 		return "Working with Ansible.......";
 	}
+	
+	@GetMapping(path = "test")
+	public String test() {
+		return "Test......";
+	}
 
 }
