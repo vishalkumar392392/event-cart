@@ -5,7 +5,7 @@ FROM amazoncorretto:21-alpine
 WORKDIR /app
 
 # Copy the Spring Boot application JAR file
-COPY eventcart-0.0.2-SNAPSHOT.jar app.jar
+COPY eventcart-0.0.4-SNAPSHOT.jar app.jar
 
 # Expose application port
 EXPOSE 8080
