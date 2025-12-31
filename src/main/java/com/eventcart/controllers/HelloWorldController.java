@@ -26,5 +26,10 @@ public class HelloWorldController {
 	public String test() {
 		return "Test......";
 	}
+	
+	@GetMapping(path = "wife")
+	public String love() {
+		return "Gayathri I LOVE YOU......";
+	}
 
 }
