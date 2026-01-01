@@ -31,5 +31,10 @@ public class HelloWorldController {
 	public String love() {
 		return "Gayathri I LOVE YOU......";
 	}
+	
+	@GetMapping(path = "pipeline")
+	public String pipeline() {
+		return "Testing pipeline......";
+	}
 
 }
