@@ -46,5 +46,10 @@ public class HelloWorldController {
 	public String vikas() {
 		return "JUNIER ENGINEER IN RAILWAYS..";
 	}
+	
+	@GetMapping(path = "ajith")
+	public String ajith() {
+		return "Manager in Bajaj..";
+	}
 
 }
