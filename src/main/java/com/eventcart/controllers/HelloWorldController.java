@@ -36,5 +36,10 @@ public class HelloWorldController {
 	public String pipeline() {
 		return "Testing pipeline......";
 	}
+	
+	@GetMapping(path = "kube")
+	public String kube() {
+		return "Welcome to Kubernetes......";
+	}
 
 }
