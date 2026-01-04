@@ -41,5 +41,10 @@ public class HelloWorldController {
 	public String kube() {
 		return "Welcome to Kubernetes......";
 	}
+	
+	@GetMapping(path = "vikas")
+	public String vikas() {
+		return "JUNIER ENGINEER IN RAILWAYS..";
+	}
 
 }
