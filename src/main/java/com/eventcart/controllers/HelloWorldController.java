@@ -16,5 +16,40 @@ public class HelloWorldController {
 	public String getResponse() {
 		return "Learning CI CD...";
 	}
+	
+	@GetMapping(path = "ansible")
+	public String getAnsible() {
+		return "Working with Ansible.......";
+	}
+	
+	@GetMapping(path = "test")
+	public String test() {
+		return "Test......";
+	}
+	
+	@GetMapping(path = "wife")
+	public String love() {
+		return "Gayathri I LOVE YOU......";
+	}
+	
+	@GetMapping(path = "pipeline")
+	public String pipeline() {
+		return "Testing pipeline......";
+	}
+	
+	@GetMapping(path = "kube")
+	public String kube() {
+		return "Welcome to Kubernetes......";
+	}
+	
+	@GetMapping(path = "vikas")
+	public String vikas() {
+		return "JUNIER ENGINEER IN RAILWAYS..";
+	}
+	
+	@GetMapping(path = "ajith")
+	public String ajith() {
+		return "Manager in Bajaj..";
+	}
 
 }
