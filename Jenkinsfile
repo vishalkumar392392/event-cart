@@ -8,7 +8,7 @@ environment {
     PATH = "/opt/maven/bin:$PATH"
 }
     stages {
-        stage('Build') {
+        stage('Code Build') {
             steps {
                 sh 'mvn clean install'
             }
