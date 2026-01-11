@@ -4,24 +4,42 @@ pipeline {
             label 'Maven'
         }
     }
-environment {
-    PATH = "/opt/maven/bin:$PATH"
-}
+
+    environment {
+        PATH = "/opt/maven/bin:$PATH"
+        SONAR_PROJECT_KEY = "eventcart"
+        SONAR_PROJECT_NAME = "eventcart"
+    }
+
     stages {
-        stage('Code Build') {
+
+        stage('Build') {
             steps {
-                sh 'mvn clean install'
+                sh 'mvn clean package -DskipTests'
             }
         }
-        stage('SonarQube analysis') {
-    		environment {
+
+        stage('Code Quality - SonarQube') {
+            environment {
      			 scannerHome = tool 'eventcart-sonar-scanner'
     		}
-   			steps{
-   				 withSonarQubeEnv('eventcart-sonarqube-server') { // If you have configured more than one global server connection, you can specify its name
-      			 sh "${scannerHome}/bin/sonar-scanner"
-   				}
-    		}
-  		}
+            steps {
+                withSonarQubeEnv(
+                    installationName: 'sonarqube-server-local',
+                    credentialsId: 'sonarqubeLocalhost'
+                ) {
+                    sh "${scannerHome}/bin/sonar-scanner"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Build and SonarQube analysis completed successfully'
+        }
+        failure {
+            echo '❌ Build or SonarQube analysis failed'
+        }
     }
 }
