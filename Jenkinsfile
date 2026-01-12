@@ -18,6 +18,11 @@ pipeline {
                 sh 'mvn clean package -DskipTests'
             }
         }
+        stage('test') {
+            steps {
+                sh 'mvn surefire-report:report'
+            }
+        }
 
         stage('Code Quality - SonarQube') {
             environment {
