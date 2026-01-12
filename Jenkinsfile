@@ -7,26 +7,26 @@ pipeline {
 
     environment {
         PATH = "/opt/maven/bin:$PATH"
-        SONAR_PROJECT_KEY = "eventcart"
-        SONAR_PROJECT_NAME = "eventcart"
     }
 
     stages {
 
-        stage('Build') {
+        stage('Build & Test') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn clean test'
             }
         }
-		stage('test') {
+
+        stage('Test Report') {
             steps {
                 sh 'mvn surefire-report:report'
             }
         }
+
         stage('Code Quality - SonarQube') {
             environment {
-     			 scannerHome = tool 'eventcart-sonar-scanner'
-    		}
+                scannerHome = tool 'eventcart-sonar-scanner'
+            }
             steps {
                 withSonarQubeEnv(
                     installationName: 'sonarqube-server-local',
@@ -36,27 +36,27 @@ pipeline {
                 }
             }
         }
-        
-        stage("Quality Gate"){
-   			steps {
-        		script {
-        			timeout(time: 1, unit: 'HOURS') { // Just in case something goes wrong, pipeline will be killed after a timeout
-    					def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
-    					if (qg.status != 'OK') {
-      					error "Pipeline aborted due to quality gate failure: ${qg.status}"
-    					}
-  					}
-				}
-   			}
-  		}
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    script {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                        }
+                    }
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo '✅ Build and SonarQube analysis completed successfully'
+            echo '✅ Build, Tests, and SonarQube analysis completed successfully'
         }
         failure {
-            echo '❌ Build or SonarQube analysis failed'
+            echo '❌ Pipeline failed'
         }
     }
 }
