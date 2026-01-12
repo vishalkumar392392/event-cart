@@ -62,7 +62,7 @@ pipeline {
 
               curl -f -u "$JFROG_USER:$JFROG_PASSWORD" \
                 -T target/eventcart-0.0.4-SNAPSHOT.jar \
-                "http://54.242.207.146:8082/artifactory/libs-snapshot-local/eventcart/eventcart-0.0.4-SNAPSHOT.jar"
+                "http://172.31.45.86:8082/artifactory/libs-snapshot-local/eventcart/eventcart-0.0.4-SNAPSHOT.jar"
             '''
         }
     }
