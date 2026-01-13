@@ -7,6 +7,7 @@ pipeline {
 
     environment {
         PATH = "/opt/maven/bin:$PATH"
+        AWS_ACCOUNT_ID = "221082203021"
     }
 
     stages {
@@ -50,48 +51,28 @@ pipeline {
             }
         }
         
-        stage('Upload Artifact to JFrog') {
-    		steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'jfrog-user-authentiation',
-            usernameVariable: 'JFROG_USER',
-            passwordVariable: 'JFROG_PASSWORD'
-        )]) {
-            sh '''
-              echo "Uploading artifact to JFrog Artifactory..."
-
-              curl -f -u "$JFROG_USER:$JFROG_PASSWORD" \
-                -T target/eventcart-0.0.4-SNAPSHOT.jar \
-                "http://172.31.45.86:8082/artifactory/libs-snapshot-local/eventcart/eventcart-0.0.4-SNAPSHOT.jar"
-            '''
-        }
-    }
-}
-
-stage('Build & Push Docker Image to JFrog') {
+        stage('Build & Push Docker Image to AWS ECR') {
     steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'jfrog-user-authentiation',
-            usernameVariable: 'JFROG_USER',
-            passwordVariable: 'JFROG_PASSWORD'
-        )]) {
-            sh '''
-              echo "Logging in to JFrog Docker Registry..."
-              docker login 54.166.227.203:8082 -u $JFROG_USER -p $JFROG_PASSWORD
+        sh '''
+          echo "Logging in to AWS ECR..."
+          aws ecr get-login-password --region us-east-1 \
+          | docker login --username AWS --password-stdin \
+            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
 
-              echo "Building Docker image..."
-              docker build -t eventcart:${BUILD_NUMBER} .
+          echo "Building Docker image..."
+          docker build -t eventcart:${BUILD_NUMBER} .
 
-              echo "Tagging Docker image for JFrog..."
-              docker tag eventcart:${BUILD_NUMBER} \
-                54.166.227.203:8082/vishalkumar392-docker-local/eventcart:${BUILD_NUMBER}
+          echo "Tagging image for ECR..."
+          docker tag eventcart:${BUILD_NUMBER} \
+            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER}
 
-              echo "Pushing Docker image to JFrog..."
-              docker push 54.166.227.203:8082/vishalkumar392-docker-local/eventcart:${BUILD_NUMBER}
-            '''
-        }
+          echo "Pushing image to ECR..."
+          docker push \
+            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER}
+        '''
     }
 }
+
     }
 
     post {
