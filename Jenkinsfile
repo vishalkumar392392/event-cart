@@ -18,12 +18,6 @@ pipeline {
             }
         }
 
-        stage('Test Report') {
-            steps {
-                sh 'mvn surefire-report:report'
-            }
-        }
-
         stage('Code Quality - SonarQube') {
             environment {
                 scannerHome = tool 'eventcart-sonar-scanner'
