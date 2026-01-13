@@ -67,6 +67,31 @@ pipeline {
         }
     }
 }
+
+stage('Build & Push Docker Image to JFrog') {
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'jfrog-user-authentiation',
+            usernameVariable: 'JFROG_USER',
+            passwordVariable: 'JFROG_PASSWORD'
+        )]) {
+            sh '''
+              echo "Logging in to JFrog Docker Registry..."
+              docker login 54.242.207.146:8082 -u $JFROG_USER -p $JFROG_PASSWORD
+
+              echo "Building Docker image..."
+              docker build -t eventcart:${BUILD_NUMBER} .
+
+              echo "Tagging Docker image for JFrog..."
+              docker tag eventcart:${BUILD_NUMBER} \
+                54.242.207.146:8082/vishalkumar392-docker-local/eventcart:${BUILD_NUMBER}
+
+              echo "Pushing Docker image to JFrog..."
+              docker push 54.242.207.146:8082/vishalkumar392-docker-local/eventcart:${BUILD_NUMBER}
+            '''
+        }
+    }
+}
     }
 
     post {
