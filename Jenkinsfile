@@ -54,15 +54,16 @@ pipeline {
             $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
 
           echo "Building Docker image..."
-          docker build -t eventcart:${BUILD_NUMBER} .
-
-          echo "Tagging image for ECR..."
-          docker tag eventcart:${BUILD_NUMBER} \
-            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER}
+          docker build -t \
+            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER} .
 
           echo "Pushing image to ECR..."
           docker push \
             $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER}
+
+          echo "Cleaning up local Docker image..."
+          docker rmi \
+            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER} || true
         '''
     }
 }
