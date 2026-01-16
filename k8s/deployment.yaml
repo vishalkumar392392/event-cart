@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: eventcart
-  namespace: prod
+  namespace: default
   labels:
     app: eventcart
 spec:

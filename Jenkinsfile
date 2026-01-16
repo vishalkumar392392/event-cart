@@ -72,7 +72,7 @@ pipeline {
     stage('Deploy to EKS') {
   steps {
     sh '''
-      aws eks update-kubeconfig --region us-east-1 --name prod-cluster
+      aws eks update-kubeconfig --region us-east-1 --name eventcart-eks-01
       envsubst < k8s/deployment.yaml | kubectl apply -f -
       kubectl apply -f k8s/service.yaml
     '''
