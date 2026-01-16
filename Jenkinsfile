@@ -67,7 +67,8 @@ pipeline {
             $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER} || true
         '''
     }
-    
+}
+
     stage('Deploy to EKS') {
   steps {
     sh '''
@@ -76,7 +77,6 @@ pipeline {
       kubectl apply -f k8s/service.yaml
     '''
   }
-}
 }
 
     }
