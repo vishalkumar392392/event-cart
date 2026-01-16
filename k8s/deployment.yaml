@@ -23,7 +23,6 @@ spec:
       labels:
         app: eventcart
     spec:
-      serviceAccountName: ecr-sa
       containers:
         - name: eventcart
           image: 221082203021.dkr.ecr.us-east-1.amazonaws.com/eventcart:${IMAGE_TAG}
