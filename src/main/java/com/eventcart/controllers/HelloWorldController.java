@@ -51,5 +51,10 @@ public class HelloWorldController {
 	public String ajith() {
 		return "Manager in Bajaj..........";
 	}
+	
+	@GetMapping(path = "prabhas")
+	public String prabhas() {
+		return "India's Biggest star.........";
+	}
 
 }
