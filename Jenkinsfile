@@ -8,6 +8,7 @@ pipeline {
     environment {
         PATH = "/opt/maven/bin:$PATH"
         AWS_ACCOUNT_ID = "221082203021"
+        IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
@@ -66,6 +67,16 @@ pipeline {
             $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER} || true
         '''
     }
+    
+    stage('Deploy to EKS') {
+  steps {
+    sh '''
+      aws eks update-kubeconfig --region us-east-1 --name prod-cluster
+      envsubst < k8s/deployment.yaml | kubectl apply -f -
+      kubectl apply -f k8s/service.yaml
+    '''
+  }
+}
 }
 
     }
