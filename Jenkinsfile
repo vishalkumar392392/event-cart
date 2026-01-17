@@ -47,37 +47,37 @@ pipeline {
         }
         
         stage('Build & Push Docker Image to AWS ECR') {
-    steps {
-        sh '''
-          echo "Logging in to AWS ECR..."
-          aws ecr get-login-password --region us-east-1 \
-          | docker login --username AWS --password-stdin \
-            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    		steps {
+        		sh '''
+		          echo "Logging in to AWS ECR..."
+		          aws ecr get-login-password --region us-east-1 \
+		          | docker login --username AWS --password-stdin \
+		            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+		
+		          echo "Building Docker image..."
+		          docker build -t \
+		            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER} .
+		
+		          echo "Pushing image to ECR..."
+		          docker push \
+		            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER}
+		
+		          echo "Cleaning up local Docker image..."
+		          docker rmi \
+		            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER} || true
+		        '''
+    			}
+		}
 
-          echo "Building Docker image..."
-          docker build -t \
-            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER} .
-
-          echo "Pushing image to ECR..."
-          docker push \
-            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER}
-
-          echo "Cleaning up local Docker image..."
-          docker rmi \
-            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER} || true
-        '''
-    }
-}
-
-    stage('Deploy to EKS') {
-  steps {
-    sh '''
-      aws eks update-kubeconfig --region us-east-1 --name eventcart-eks-01
-      envsubst < k8s/deployment.yaml | kubectl apply -f -
-      kubectl apply -f k8s/service.yaml
-    '''
-  }
-}
+    	stage('Deploy to EKS') {
+		  steps {
+		    sh '''
+		      aws eks update-kubeconfig --region us-east-1 --name eventcart-eks-01
+		      envsubst < k8s/deployment.yaml | kubectl apply -f -
+		      kubectl apply -f k8s/service.yaml
+		    '''
+		  }
+		}
 
     }
 
