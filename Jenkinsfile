@@ -5,13 +5,64 @@ pipeline {
         }
     }
 
+    parameters {
+        gitParameter(
+            name: 'BRANCH',
+            type: 'PT_BRANCH',
+            defaultValue: 'main',
+            branchFilter: 'origin/(.*)',
+            description: 'Select Git branch'
+        )
+
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['dev', 'uat', 'prod'],
+            description: 'Deployment environment'
+        )
+
+        string(
+            name: 'IMAGE_NAME',
+            defaultValue: 'eventcart',
+            description: 'Docker image name'
+        )
+
+        string(
+            name: 'REPLICAS',
+            defaultValue: '1',
+            description: 'Number of pod replicas'
+        )
+
+        string(
+            name: 'REQUEST_CPU',
+            defaultValue: '250m',
+            description: 'CPU request'
+        )
+
+        string(
+            name: 'REQUEST_MEMORY',
+            defaultValue: '512Mi',
+            description: 'Memory request'
+        )
+    }
+
     environment {
         PATH = "/opt/maven/bin:$PATH"
         AWS_ACCOUNT_ID = "221082203021"
+        AWS_REGION = "us-east-1"
         IMAGE_TAG = "${BUILD_NUMBER}"
+        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${params.IMAGE_NAME}"
+        NAMESPACE = "${params.ENVIRONMENT}"
     }
 
     stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: "${params.BRANCH}",
+                    credentialsId: 'github-creds',
+                    url: 'https://github.com/vishalkumar392392/eventcart.git'
+            }
+        }
 
         stage('Build & Test') {
             steps {
@@ -45,48 +96,44 @@ pipeline {
                 }
             }
         }
-        
-        stage('Build & Push Docker Image to AWS ECR') {
-    		steps {
-        		sh '''
-		          echo "Logging in to AWS ECR..."
-		          aws ecr get-login-password --region us-east-1 \
-		          | docker login --username AWS --password-stdin \
-		            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
-		
-		          echo "Building Docker image..."
-		          docker build -t \
-		            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER} .
-		
-		          echo "Pushing image to ECR..."
-		          docker push \
-		            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER}
-		
-		          echo "Cleaning up local Docker image..."
-		          docker rmi \
-		            $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/eventcart:${BUILD_NUMBER} || true
-		        '''
-    			}
-		}
 
-    	stage('Deploy to EKS') {
-		  steps {
-		    sh '''
-		      aws eks update-kubeconfig --region us-east-1 --name eventcart-eks-01
-		      envsubst < k8s/deployment.yaml | kubectl apply -f -
-		      kubectl apply -f k8s/service.yaml
-		    '''
-		  }
-		}
+        stage('Build & Push Docker Image') {
+            steps {
+                sh """
+                  aws ecr get-login-password --region ${AWS_REGION} \
+                  | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
+                  docker build -t ${ECR_REPO}:${IMAGE_TAG} .
+                  docker push ${ECR_REPO}:${IMAGE_TAG}
+                  docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
+                """
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                sh """
+                  aws eks update-kubeconfig --region ${AWS_REGION} --name eventcart-eks-01
+
+                  export IMAGE=${ECR_REPO}:${IMAGE_TAG}
+                  export NAMESPACE=${NAMESPACE}
+                  export REPLICAS=${params.REPLICAS}
+                  export REQUEST_CPU=${params.REQUEST_CPU}
+                  export REQUEST_MEMORY=${params.REQUEST_MEMORY}
+
+                  envsubst < k8s/deployment.yaml | kubectl apply -f -
+                  kubectl apply -f k8s/service.yaml
+                """
+            }
+        }
     }
 
     post {
         success {
-            echo '✅ Build, Tests, and SonarQube analysis completed successfully'
+            echo "✅ Deployment successful to ${params.ENVIRONMENT}"
         }
         failure {
-            echo '❌ Pipeline failed'
+            echo "❌ Pipeline failed"
         }
     }
 }
