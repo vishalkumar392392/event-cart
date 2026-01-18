@@ -105,21 +105,21 @@ pipeline {
         }
 
         stage('Deploy to EKS') {
-            steps {
-                sh """
-                  aws eks update-kubeconfig --region ${AWS_REGION} --name eventcart-eks-01
-
-                  export IMAGE=${ECR_REPO}:${IMAGE_TAG}
-                  export NAMESPACE=${NAMESPACE}
-                  export REPLICAS=${params.REPLICAS}
-                  export REQUEST_CPU=${params.REQUEST_CPU}
-                  export REQUEST_MEMORY=${params.REQUEST_MEMORY}
-
-                  envsubst < k8s/deployment.yaml | kubectl apply -f -
-                  kubectl apply -f k8s/service.yaml
-                """
-            }
-        }
+		    steps {
+		        sh """
+		          aws eks update-kubeconfig --region ${AWS_REGION} --name eventcart-eks-01
+		
+		          export IMAGE=${ECR_REPO}:${IMAGE_TAG}
+		          export NAMESPACE=${NAMESPACE}
+		          export REPLICAS=${params.REPLICAS}
+		          export REQUEST_CPU=${params.REQUEST_CPU}
+		          export REQUEST_MEMORY=${params.REQUEST_MEMORY}
+		
+		          envsubst < k8s/deployment.yaml | kubectl apply -f -
+		          envsubst < k8s/service.yaml | kubectl apply -f -
+		        """
+		    }
+}
     }
 
     post {
