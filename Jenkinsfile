@@ -56,13 +56,7 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                git branch: "${params.BRANCH}",
-                    credentialsId: 'github-creds',
-                    url: 'https://github.com/vishalkumar392392/eventcart.git'
-            }
-        }
+        
 
         stage('Build & Test') {
             steps {
