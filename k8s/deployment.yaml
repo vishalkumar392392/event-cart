@@ -21,8 +21,30 @@ spec:
       containers:
         - name: eventcart
           image: ${IMAGE}
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
+
+          # =========================
+          # ENVIRONMENT VARIABLES
+          # =========================
+          env:
+            # Spring profile (dev / uat / prod)
+            - name: SPRING_PROFILES_ACTIVE
+              value: ${ENVIRONMENT}
+
+            # Database connection (non-secret)
+            - name: DB_HOST
+              value: ${DB_HOST}
+
+            - name: DB_PORT
+              value: "3306"
+
+            - name: DB_USERNAME
+              value: ${DB_USERNAME}
+
+            # DB_PASSWORD will come later from AWS Secrets Manager
+
           resources:
             requests:
               cpu: ${REQUEST_CPU}
