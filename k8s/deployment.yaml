@@ -3,25 +3,35 @@ kind: Deployment
 metadata:
   name: eventcart
   namespace: ${NAMESPACE}
+  labels:
+    app: eventcart
+
 spec:
   replicas: ${REPLICAS}
+
   selector:
     matchLabels:
       app: eventcart
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
+
   template:
     metadata:
       labels:
         app: eventcart
+
     spec:
+      serviceAccountName: eventcart-sa
+
       containers:
         - name: eventcart
-          image: ${IMAGE}
+          image: ${IMAGE_URI}
           imagePullPolicy: Always
+
           ports:
             - containerPort: 8080
 
@@ -31,24 +41,69 @@ spec:
           env:
             # Spring profile (dev / uat / prod)
             - name: SPRING_PROFILES_ACTIVE
-              value: ${ENVIRONMENT}
+              value: ${SPRING_PROFILE}
 
-            # Database connection (non-secret)
+            # ---- Secrets from AWS Secrets Manager ----
+
             - name: DB_HOST
-              value: ${DB_HOST}
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets-env
+                  key: DB_HOST
 
             - name: DB_PORT
-              value: "3306"
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets-env
+                  key: DB_PORT
 
             - name: DB_USERNAME
-              value: ${DB_USERNAME}
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets-env
+                  key: DB_USERNAME
 
-            # DB_PASSWORD will come later from AWS Secrets Manager
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets-env
+                  key: DB_PASSWORD
 
+            - name: BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets-env
+                  key: BUCKET_NAME
+
+            - name: QUEUE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secrets-env
+                  key: QUEUE_NAME
+
+          # =========================
+          # RESOURCE MANAGEMENT
+          # =========================
           resources:
             requests:
               cpu: ${REQUEST_CPU}
               memory: ${REQUEST_MEMORY}
             limits:
-              cpu: "500m"
-              memory: "1024Mi"
+              cpu: ${LIMIT_CPU}
+              memory: ${LIMIT_MEMORY}
+
+          # =========================
+          # CSI VOLUME MOUNT
+          # =========================
+          volumeMounts:
+            - name: secrets-store
+              mountPath: /mnt/secrets
+              readOnly: true
+
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: aws-secrets

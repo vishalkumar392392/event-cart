@@ -141,9 +141,12 @@ pipeline {
                   export LIMIT_CPU=${params.LIMIT_CPU}
                   export LIMIT_MEMORY=${params.LIMIT_MEMORY}
 
-                  envsubst < k8s/secretproviderclass.yaml | kubectl apply -f -
-                  envsubst < k8s/deployment.yaml | kubectl apply -f -
-		          envsubst < k8s/service.yaml | kubectl apply -f -
+                  kubectl get ns ${NAMESPACE} || kubectl create ns ${NAMESPACE}
+
+					envsubst < k8s/secretproviderclass.yaml | kubectl apply -f -
+					envsubst < k8s/serviceaccount.yaml | kubectl apply -f -
+					envsubst < k8s/deployment.yaml | kubectl apply -f -
+					envsubst < k8s/service.yaml | kubectl apply -f -
                 """
             }
         }

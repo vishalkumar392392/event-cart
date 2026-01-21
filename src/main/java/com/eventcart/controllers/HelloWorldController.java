@@ -1,15 +1,24 @@
 package com.eventcart.controllers;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.extern.log4j.Log4j;
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
 @RestController
 public class HelloWorldController {
 	
 	
+	@Value("${DB_HOST}")
+	private String DB_HOST;
+	
 	@GetMapping(path = "message")
 	public String getMessage() {
-		return "Hello World from eventcart";
+		log.info("DB Host = {}", System.getenv("DB_HOST"));
+		return "Hello World from eventcart: " +DB_HOST;
 	}
 	
 	@GetMapping(path = "response")
