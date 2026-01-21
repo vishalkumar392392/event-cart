@@ -12,7 +12,7 @@ import lombok.extern.log4j.Log4j2;
 public class HelloWorldController {
 	
 	
-	@Value("${DB_HOST}")
+	@Value("${DB_HOST:NOT_SET}")
 	private String DB_HOST;
 	
 	@GetMapping(path = "message")
