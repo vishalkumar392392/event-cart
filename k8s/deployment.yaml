@@ -3,30 +3,74 @@ kind: Deployment
 metadata:
   name: eventcart
   namespace: ${NAMESPACE}
+  labels:
+    app: eventcart
+
 spec:
   replicas: ${REPLICAS}
+
   selector:
     matchLabels:
       app: eventcart
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
+
   template:
     metadata:
       labels:
         app: eventcart
+
     spec:
+      serviceAccountName: eventcart-sa
+
       containers:
         - name: eventcart
-          image: ${IMAGE}
+          image: ${IMAGE_URI}
+          imagePullPolicy: Always
+
           ports:
             - containerPort: 8080
+
+          # =========================
+          # ENVIRONMENT VARIABLES
+          # =========================
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: ${SPRING_PROFILE}
+
+            # CSI-mounted secrets (file-based)
+            - name: SPRING_CONFIG_IMPORT
+              value: optional:configtree:/mnt/secrets/
+
+            
+
+          # =========================
+          # RESOURCE MANAGEMENT
+          # =========================
           resources:
             requests:
               cpu: ${REQUEST_CPU}
               memory: ${REQUEST_MEMORY}
             limits:
-              cpu: "500m"
-              memory: "1024Mi"
+              cpu: ${LIMIT_CPU}
+              memory: ${LIMIT_MEMORY}
+
+          # =========================
+          # CSI VOLUME MOUNT
+          # =========================
+          volumeMounts:
+            - name: secrets-store
+              mountPath: /mnt/secrets
+              readOnly: true
+
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: aws-secrets

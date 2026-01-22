@@ -5,6 +5,9 @@ pipeline {
         }
     }
 
+    /***********************
+     * PARAMETERS (UI)
+     ***********************/
     parameters {
         gitParameter(
             name: 'BRANCH',
@@ -43,20 +46,37 @@ pipeline {
             defaultValue: '512Mi',
             description: 'Memory request'
         )
+
+        string(
+            name: 'LIMIT_CPU',
+            defaultValue: '500m',
+            description: 'CPU limit'
+        )
+
+        string(
+            name: 'LIMIT_MEMORY',
+            defaultValue: '1024Mi',
+            description: 'Memory limit'
+        )
     }
 
+    /***********************
+     * ENVIRONMENT VARS
+     ***********************/
     environment {
         PATH = "/opt/maven/bin:$PATH"
+
         AWS_ACCOUNT_ID = "221082203021"
-        AWS_REGION = "us-east-1"
+        AWS_REGION     = "us-east-1"
+
         IMAGE_TAG = "${BUILD_NUMBER}"
-        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${params.IMAGE_NAME}"
+        IMAGE_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${params.IMAGE_NAME}:${IMAGE_TAG}"
+
         NAMESPACE = "${params.ENVIRONMENT}"
+        SPRING_PROFILE = "${params.ENVIRONMENT}"
     }
 
     stages {
-
-        
 
         stage('Build & Test') {
             steps {
@@ -95,36 +115,45 @@ pipeline {
             steps {
                 sh """
                   aws ecr get-login-password --region ${AWS_REGION} \
-                  | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                  | docker login --username AWS --password-stdin \
+                    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
-                  docker build -t ${ECR_REPO}:${IMAGE_TAG} .
-                  docker push ${ECR_REPO}:${IMAGE_TAG}
-                  docker rmi ${ECR_REPO}:${IMAGE_TAG} || true
+                  docker build -t ${IMAGE_URI} .
+                  docker push ${IMAGE_URI}
+                  docker rmi ${IMAGE_URI} || true
                 """
             }
         }
 
         stage('Deploy to EKS') {
-		    steps {
-		        sh """
-		          aws eks update-kubeconfig --region ${AWS_REGION} --name eventcart-eks-01
-		
-		          export IMAGE=${ECR_REPO}:${IMAGE_TAG}
-		          export NAMESPACE=${NAMESPACE}
-		          export REPLICAS=${params.REPLICAS}
-		          export REQUEST_CPU=${params.REQUEST_CPU}
-		          export REQUEST_MEMORY=${params.REQUEST_MEMORY}
-		
-		          envsubst < k8s/deployment.yaml | kubectl apply -f -
-		          envsubst < k8s/service.yaml | kubectl apply -f -
-		        """
-		    }
-}
+            steps {
+                sh """
+                  aws eks update-kubeconfig \
+                    --region ${AWS_REGION} \
+                    --name eventcart-eks-01
+
+                  export IMAGE_URI=${IMAGE_URI}
+                  export NAMESPACE=${NAMESPACE}
+                  export REPLICAS=${params.REPLICAS}
+                  export SPRING_PROFILE=${SPRING_PROFILE}
+                  export REQUEST_CPU=${params.REQUEST_CPU}
+                  export REQUEST_MEMORY=${params.REQUEST_MEMORY}
+                  export LIMIT_CPU=${params.LIMIT_CPU}
+                  export LIMIT_MEMORY=${params.LIMIT_MEMORY}
+
+                  kubectl get ns ${NAMESPACE} || kubectl create ns ${NAMESPACE}
+
+					envsubst < k8s/secretproviderclass.yaml | kubectl apply -f -
+					envsubst < k8s/deployment.yaml | kubectl apply -f -
+					envsubst < k8s/service.yaml | kubectl apply -f -
+                """
+            }
+        }
     }
 
     post {
         success {
-            echo "✅ Deployment successful to ${params.ENVIRONMENT}"
+            echo "✅ Deployment successful to ${ENVIRONMENT}"
         }
         failure {
             echo "❌ Pipeline failed"
