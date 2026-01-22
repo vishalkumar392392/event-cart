@@ -1,30 +1,24 @@
-# Complete EKS Setup Using eksctl (Step by Step)
+# EKS Cluster Setup Using eksctl
 
-> Production-grade, ordered, copy-paste friendly checklist.
-> If you follow exactly in this order, your setup will work.
-
----
-
-## Prerequisites
-
-Before starting, ensure you have the following tools installed and configured on your EC2 instance or local machine:
-
-```bash
-aws --version
-eksctl version
-kubectl version --client
-```
-
-### Required Configuration
-
-- AWS CLI is configured: `aws configure`
-- IAM user/role has `AdministratorAccess` (for learning purposes)
+A comprehensive guide to create and manage an Amazon EKS cluster using the `eksctl` tool.
 
 ---
 
-## Step 1: Create EKS Cluster (with OIDC Enabled)
+## Table of Contents
 
-Run the following command to create your EKS cluster:
+1. [Create EKS Cluster](#create-eks-cluster)
+2. [Create Namespaces](#create-namespaces)
+3. [Create IAM Policy](#create-iam-policy)
+4. [Create IAM Service Account](#create-iam-service-account)
+5. [Install CSI Driver](#install-csi-driver)
+6. [Install AWS Provider](#install-aws-provider)
+7. [Delete Cluster](#delete-cluster)
+
+---
+
+## Create EKS Cluster
+
+Create an EKS cluster with OIDC provider enabled (required for IRSA):
 
 ```bash
 eksctl create cluster \
@@ -37,31 +31,22 @@ eksctl create cluster \
   --nodes-min 2 \
   --nodes-max 2 \
   --managed \
-  --with-oidc \
-  --ssh-access \
-  --ssh-public-key ~/.ssh/id_rsa.pub
+  --with-oidc
 ```
 
-### What This Creates Automatically
+### What This Creates
 
-- VPC
-- Subnets
-- Node security groups
-- Worker IAM role
-- OIDC provider (**CRITICAL for IRSA**)
-
-### Verify Cluster
-
-```bash
-kubectl get nodes
-kubectl get svc
-```
+- VPC and Subnets
+- EKS Control Plane
+- Worker Node Group (2 nodes)
+- OIDC provider for IRSA
+- Required IAM roles and security groups
 
 ---
 
-## Step 2: Create Namespaces (Environments)
+## Create Namespaces
 
-Create separate namespaces for different environments:
+Create separate Kubernetes namespaces for different environments:
 
 ```bash
 kubectl create namespace dev
@@ -69,7 +54,7 @@ kubectl create namespace uat
 kubectl create namespace prod
 ```
 
-Verify namespaces:
+Verify the namespaces were created:
 
 ```bash
 kubectl get ns
@@ -77,9 +62,13 @@ kubectl get ns
 
 ---
 
-## Step 3: Create IAM Policy for Secrets Manager
+## Create IAM Policy
 
-Navigate to AWS Console and create a policy named `eks-secrets-manager-policy` with the following JSON:
+Create an IAM policy named `eks-secrets-manager-policy` to grant read permissions to AWS Secrets Manager.
+
+> **Note:** Create this policy via the AWS Management Console
+
+### Policy Document
 
 ```json
 {
@@ -99,11 +88,9 @@ Navigate to AWS Console and create a policy named `eks-secrets-manager-policy` w
 
 ---
 
-## Step 4: Create IRSA Service Account
+## Create IAM Service Account
 
-> **Warning:** Do NOT attach policy to node role or eksctl role
-
-Run the following command to create an IAM service account with proper OIDC trust:
+Create an IAM service account (IRSA) for the `dev` namespace with the necessary Secrets Manager permissions:
 
 ```bash
 eksctl create iamserviceaccount \
@@ -115,175 +102,93 @@ eksctl create iamserviceaccount \
   --approve
 ```
 
-### What This Creates
-
-- IAM Role
-- Trust policy with OIDC provider
-- ServiceAccount annotation
-
 ### Verify Service Account
 
 ```bash
 kubectl get sa eventcart-sa -n dev -o yaml | grep eks.amazonaws.com
 ```
 
+> **Tip:** Create similar service accounts for `uat` and `prod` namespaces by running the same command with different namespace values.
+
 ---
 
-## Step 5: Install Secrets Store CSI Driver
+## Install CSI Driver
 
-> **Warning:** Do NOT mix versions or manually install CRDs separately
+Install the Secrets Store CSI Driver using Helm:
 
-Install the CSI Driver (includes CRDs):
+### Add Helm Repository
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/v1.4.4/deploy/secrets-store-csi-driver.yaml
+helm repo add secrets-store-csi-driver \
+  https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
+```
+
+### Update Repository
+
+```bash
+helm repo update
+```
+
+### Install CSI Driver
+
+```bash
+helm install csi-secrets-store \
+  secrets-store-csi-driver/secrets-store-csi-driver \
+  --namespace kube-system \
+  --set syncSecret.enabled=true \
+  --set enableSecretRotation=true
+```
+
+---
+
+## Install AWS Provider
+
+Install the AWS-specific provider for the Secrets Store CSI Driver:
+
+```bash
+kubectl apply -f \
+  https://raw.githubusercontent.com/aws/secrets-store-csi-driver-provider-aws/main/deployment/aws-provider-installer.yaml
 ```
 
 ### Verify Installation
 
+Check if the CSI driver pods are running:
+
 ```bash
 kubectl get pods -n kube-system | grep secrets-store
-kubectl get crd | grep secrets-store
 ```
 
-You should see these Custom Resource Definitions:
-
-- `secretproviderclasses.secrets-store.csi.x-k8s.io`
-- `secretproviderclasspodstatuses.secrets-store.csi.x-k8s.io`
-
----
-
-## Step 6: Install AWS Provider
-
-Install the AWS-specific provider for Secrets Store CSI Driver:
+Verify that the required CRDs are installed:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/aws/secrets-store-csi-driver-provider-aws/main/deployment/aws-provider-installer.yaml
-```
-
-### Verify AWS Provider
-
-```bash
-kubectl get pods -n kube-system | grep aws
+kubectl get crd | grep secretprovider
 ```
 
 ---
 
-## Step 7: Apply Kubernetes Files
+## Delete Cluster
 
-### Order Matters!
+> ⚠️ **Warning:** This will delete all resources associated with the cluster.
 
-#### 7.1 Apply ServiceAccount
+### Step 1: Delete Namespaces
 
 ```bash
-kubectl apply -f serviceaccount.yaml
+kubectl delete namespace dev
+kubectl delete namespace uat
+kubectl delete namespace prod
 ```
 
-> **Ensure** the `serviceAccountName: eventcart-sa` is specified in the YAML
-
-#### 7.2 Apply SecretProviderClass
+### Step 2: Delete EKS Cluster
 
 ```bash
-kubectl apply -f secretproviderclass.yaml
-```
-
-Verify:
-
-```bash
-kubectl get secretproviderclass -n dev
-```
-
-#### 7.3 Apply Deployment
-
-```bash
-kubectl apply -f deployment.yaml
-```
-
-#### 7.4 Apply Service
-
-```bash
-kubectl apply -f service.yaml
+eksctl delete cluster --name eventcart-eks-01 --region us-east-1
 ```
 
 ---
 
-## Step 8: Verify Pod & Secrets
+## Additional Resources
 
-Check if pods are running:
-
-```bash
-kubectl get pods -n dev
-kubectl describe pod -n dev <pod-name>
-```
-
-### Expected Results
-
-- ❌ **NO** `FailedMount` errors
-- ✅ Status should be `ContainerRunning`
-
-Check environment variables:
-
-```bash
-kubectl exec -n dev <pod-name> -- printenv | grep DB_
-```
-
----
-
-## Step 9: Access Application
-
-Retrieve the service endpoint:
-
-```bash
-kubectl get svc -n dev
-```
-
-Access the application:
-
-```bash
-curl http://<ELB-DNS>/wife
-```
-
----
-
-## What NOT to Do (Common Mistakes)
-
-### ❌ Incorrect Practices
-
-1. **Do NOT** attach SecretsManager policy to:
-   - eksctl role
-   - NodeGroup role
-
-2. **Do NOT** manually install CRDs from random URLs
-
-3. **Do NOT** mix Terraform + eksctl for IRSA
-
----
-
-## Mental Model: Understanding the Architecture
-
-| Layer               | Responsibility      |
-| ------------------- | ------------------- |
-| `eksctl`            | Cluster, OIDC, IRSA |
-| IAM Policy          | Permissions         |
-| ServiceAccount      | Identity            |
-| CSI Driver          | Fetch secrets       |
-| SecretProviderClass | Map secrets         |
-| Pod                 | Consume env vars    |
-
----
-
-## Conclusion
-
-Yes — **ALL** of this is achievable using eksctl alone, and this is the **industry-preferred way** for EKS + Secrets Manager.
-
-### Next Steps
-
-After completing this guide, you can:
-
-- Review your final YAML files for correctness
-- Implement a production hardening checklist
-- Convert setup to multi-environment (dev/uat/prod) cleanly
-
----
-
-**Happy deploying! 🚀**
+- [eksctl Documentation](https://eksctl.io/)
+- [AWS EKS Best Practices](https://aws.github.io/aws-eks-best-practices/)
+- [Secrets Store CSI Driver](https://secrets-store-csi-driver.sigs.k8s.io/)
+- [AWS Provider for Secrets Store CSI Driver](https://github.com/aws/secrets-store-csi-driver-provider-aws)
