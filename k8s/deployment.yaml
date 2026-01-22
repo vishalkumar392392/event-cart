@@ -44,7 +44,7 @@ spec:
 
             # CSI-mounted secrets (file-based)
             - name: SPRING_CONFIG_IMPORT
-              value: optional:file:/mnt/secrets/
+              value: optional:configtree:/mnt/secrets/
 
             
 
