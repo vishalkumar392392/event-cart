@@ -43,23 +43,10 @@ spec:
               value: ${SPRING_PROFILE}
 
             # CSI-mounted secrets (file-based)
-            - name: DB_HOST
-              value: file:/mnt/secrets/DB_HOST
+            - name: SPRING_CONFIG_IMPORT
+              value: optional:file:/mnt/secrets/
 
-            - name: DB_PORT
-              value: file:/mnt/secrets/DB_PORT
-
-            - name: DB_USERNAME
-              value: file:/mnt/secrets/DB_USERNAME
-
-            - name: DB_PASSWORD
-              value: file:/mnt/secrets/DB_PASSWORD
-
-            - name: BUCKET_NAME
-              value: file:/mnt/secrets/BUCKET_NAME
-
-            - name: QUEUE_NAME
-              value: file:/mnt/secrets/QUEUE_NAME
+            
 
           # =========================
           # RESOURCE MANAGEMENT
