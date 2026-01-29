@@ -66,7 +66,7 @@ pipeline {
     environment {
         PATH = "/opt/maven/bin:$PATH"
 
-        AWS_ACCOUNT_ID = "221082203021"
+        AWS_ACCOUNT_ID = "735235878184"
         AWS_REGION     = "us-east-1"
 
         IMAGE_TAG = "${BUILD_NUMBER}"
