@@ -20,6 +20,18 @@ NODE_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" \
   http://169.254.169.254/latest/meta-data/local-ipv4)
 
 ############################
+# GLOBAL KAFKA ENV VARIABLES
+# (Persist across reboot & login)
+############################
+cat <<EOF > /etc/profile.d/kafka.sh
+export KAFKA_HOME=/opt/kafka
+export BOOTSTRAP_SERVER=${NODE_IP}:9092
+export PATH=\$PATH:/opt/kafka/bin
+EOF
+
+chmod +x /etc/profile.d/kafka.sh
+
+############################
 # INSTALL DEPENDENCIES
 ############################
 yum update -y
@@ -59,16 +71,22 @@ fi
 for i in 1 2 3; do
   BROKER_PORT=$((9091 + i))
   CTRL_PORT=$((19090 + i))
+
   cat <<EOF > ${KAFKA_HOME}/config/kraft/broker${i}.properties
 process.roles=broker,controller
 node.id=${i}
+
 controller.quorum.voters=1@${NODE_IP}:19091,2@${NODE_IP}:19092,3@${NODE_IP}:19093
+
 listeners=PLAINTEXT://0.0.0.0:${BROKER_PORT},CONTROLLER://0.0.0.0:${CTRL_PORT}
 advertised.listeners=PLAINTEXT://${NODE_IP}:${BROKER_PORT}
+
 listener.security.protocol.map=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
 inter.broker.listener.name=PLAINTEXT
 controller.listener.names=CONTROLLER
+
 log.dirs=${DATA_DIR}/broker${i}
+
 num.partitions=3
 offsets.topic.replication.factor=3
 transaction.state.log.replication.factor=3
@@ -77,7 +95,7 @@ EOF
 done
 
 ############################
-# FORMAT STORAGE (ONCE)
+# FORMAT STORAGE (RUN ONCE)
 ############################
 if [ ! -f "${DATA_DIR}/.formatted" ]; then
   for i in 1 2 3; do
@@ -122,4 +140,4 @@ for i in 1 2 3; do
   systemctl start kafka-broker${i}
 done
 
-echo "✅ Kafka 3.6.0 KRaft cluster auto-start enabled (systemd)"
+echo "✅ Kafka 3.6.0 KRaft cluster started with systemd + env vars"
