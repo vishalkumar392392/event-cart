@@ -36,7 +36,7 @@ public class StudentController {
 		return studentRepository.findAll();
 
 	}
-	
+
 	@GetMapping("/students/{id}")
 	public Optional<Student> getStudents(@PathVariable("id") long id) {
 
@@ -50,6 +50,11 @@ public class StudentController {
 	@GetMapping(path = "message")
 	public String getMessage() {
 		return "Hello World from eventcart: " + DB_HOST;
+	}
+
+	@GetMapping(path = "/hero")
+	public String getHero() {
+		return "PRABHAS....India's Biggest Superstar";
 	}
 
 }
