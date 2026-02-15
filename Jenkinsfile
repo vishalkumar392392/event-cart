@@ -67,7 +67,7 @@ pipeline {
         PATH = "/opt/maven/bin:$PATH"
 
         AWS_ACCOUNT_ID = "735235878184"
-        AWS_REGION     = "us-east-1"
+        AWS_REGION     = "us-east-2"
 
         IMAGE_TAG = "${BUILD_NUMBER}"
         IMAGE_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${params.IMAGE_NAME}:${IMAGE_TAG}"
