@@ -59,4 +59,9 @@ public class StudentController {
 		return "PRABHAS....India's Biggest Superstar";
 	}
 
+	@GetMapping(path = "/heroine")
+	public String getHeroine() {
+		return "Rashmika....Most Beautiful Actress";
+	}
+
 }
