@@ -1,5 +1,8 @@
 # EventCart - End-to-End DevOps Pipeline Demo
 
+<img width="1157" height="632" alt="image" src="https://github.com/user-attachments/assets/2948a334-f7ae-4ee6-99f4-9f46c7dffa83" />
+
+
 ## Overview
 
 **EventCart** is a Spring Boot application designed as a learning project to demonstrate a complete end-to-end DevOps pipeline. This project showcases best practices and tools used in modern cloud-native application deployment and continuous integration/continuous deployment (CI/CD) workflows.
