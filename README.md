@@ -1,6 +1,7 @@
 # EventCart - End-to-End DevOps Pipeline Demo
 
-<img width="1157" height="632" alt="image" src="https://github.com/user-attachments/assets/2948a334-f7ae-4ee6-99f4-9f46c7dffa83" />
+<img width="1156" height="633" alt="image" src="https://github.com/user-attachments/assets/ae73df57-80bd-40ce-857a-97189ca016f8" />
+
 
 
 ## Overview
